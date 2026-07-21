@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  weightKg     Float?
+  heightCm     Float?
+  sex          String? // 'male' | 'female' | 'other'
+  dateOfBirth  DateTime?
+  createdAt    DateTime @default(now())
+
+  weightLogs      WeightLog[]
+  workoutSessions WorkoutSession[]
+  mealLogs        MealLog[]
+  chatMessages    ChatMessage[]
+  customExercises Exercise[]      @relation("CustomExercises")
+}
+
+model WeightLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weightKg  Float
+  loggedAt  DateTime @default(now())
+
+  @@index([userId, loggedAt])
+}
+
+model Exercise {
+  id        String   @id @default(uuid())
+  name      String
+  category  String // 'cardio' | 'strength' | 'mobility'
+  metValue  Float? // used for cardio / general calorie estimate
+  isCustom  Boolean  @default(false)
+  createdById String?
+  createdBy   User?    @relation("CustomExercises", fields: [createdById], references: [id])
+
+  workoutEntries WorkoutEntry[]
+
+  @@index([name])
+}
+
+model WorkoutSession {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  notes     String?
+  createdAt DateTime @default(now())
+
+  entries WorkoutEntry[]
+
+  @@index([userId, date])
+}
+
+model WorkoutEntry {
+  id              String         @id @default(uuid())
+  sessionId       String
+  session         WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exerciseId      String
+  exercise        Exercise       @relation(fields: [exerciseId], references: [id])
+  sets            Int?
+  reps            Int?
+  weightKg        Float?
+  durationMin     Float?
+  distanceKm      Float?
+  caloriesBurned  Float?
+}
+
+model FoodItem {
+  id               String   @id @default(uuid())
+  externalId       String? // ID from USDA / Open Food Facts
+  source           String? // 'usda' | 'openfoodfacts' | 'manual'
+  name             String
+  caloriesPer100g  Float
+  proteinPer100g   Float?
+  carbsPer100g     Float?
+  fatPer100g       Float?
+  cachedAt         DateTime @default(now())
+
+  mealEntries MealEntry[]
+
+  @@index([name])
+  @@index([externalId, source])
+}
+
+model MealLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  mealType  String? // breakfast | lunch | dinner | snack
+  createdAt DateTime @default(now())
+
+  entries MealEntry[]
+
+  @@index([userId, date])
+}
+
+model MealEntry {
+  id         String   @id @default(uuid())
+  mealLogId  String
+  mealLog    MealLog  @relation(fields: [mealLogId], references: [id], onDelete: Cascade)
+  foodItemId String
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+  quantityG  Float
+  calories   Float
+}
+
+model ChatMessage {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String // 'user' | 'assistant'
+  content        String
+  structuredData Json?
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
