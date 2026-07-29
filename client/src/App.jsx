@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import LogWorkout from "./pages/LogWorkout.jsx";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -27,6 +28,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/log-workout"
+        element={
+          <ProtectedRoute>
+            <LogWorkout />
           </ProtectedRoute>
         }
       />

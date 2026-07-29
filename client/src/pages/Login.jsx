@@ -21,19 +21,19 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-bg px-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 p-8 rounded-xl w-full max-w-sm space-y-4"
+        className="bg-bg-card border border-bg-border p-8 rounded-2xl w-full max-w-sm space-y-4"
       >
-        <h1 className="text-2xl font-semibold text-white">Log in</h1>
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        <h1 className="text-2xl font-medium text-text">Log in</h1>
+        {error && <p className="text-accent text-sm">{error}</p>}
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-3 py-2 rounded bg-gray-700 text-white placeholder-gray-400"
+          className="w-full px-3 py-2 rounded-lg bg-bg border border-bg-border text-text placeholder-text-muted focus:outline-none focus:border-accent"
           required
         />
         <input
@@ -41,18 +41,18 @@ export default function Login() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-3 py-2 rounded bg-gray-700 text-white placeholder-gray-400"
+          className="w-full px-3 py-2 rounded-lg bg-bg border border-bg-border text-text placeholder-text-muted focus:outline-none focus:border-accent"
           required
         />
         <button
           type="submit"
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded font-medium"
+          className="w-full bg-accent hover:opacity-90 text-accent-dark py-2 rounded-lg font-medium transition"
         >
           Log in
         </button>
-        <p className="text-gray-400 text-sm text-center">
+        <p className="text-text-muted text-sm text-center">
           No account?{" "}
-          <Link to="/signup" className="text-emerald-400 hover:underline">
+          <Link to="/signup" className="text-accent hover:underline">
             Sign up
           </Link>
         </p>
