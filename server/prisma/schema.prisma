@@ -23,6 +23,7 @@ model User {
   mealLogs        MealLog[]
   chatMessages    ChatMessage[]
   customExercises Exercise[]      @relation("CustomExercises")
+  goals           Goal[]
 }
 
 model WeightLog {
@@ -126,4 +127,18 @@ model ChatMessage {
   createdAt      DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+model Goal {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodType         String   // 'weekly' | 'monthly'
+  startDate          DateTime
+  calorieTarget      Int?     // daily calorie target
+  workoutCountTarget Int?     // number of workouts for the period
+  targetWeightKg     Float?
+  createdAt          DateTime @default(now())
+
+  @@index([userId, startDate])
 }
