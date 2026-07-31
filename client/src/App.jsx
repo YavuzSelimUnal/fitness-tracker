@@ -10,6 +10,8 @@ import LogOptions from "./pages/LogOptions.jsx";
 import FoodLog from "./pages/FoodLog.jsx";
 import Goals from "./pages/Goals.jsx";
 import Account from "./pages/Account.jsx";
+import WeightTracker from "./pages/WeightTracker.jsx";
+
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -36,6 +38,7 @@ function AppRoutes() {
       <Route path="/log-meal" element={<ProtectedRoute><LogMeal /></ProtectedRoute>} />
       <Route path="/progress" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
       <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+      <Route path="/weight" element={<ProtectedRoute><WeightTracker /></ProtectedRoute>} />
     </Routes>
   );
 }

@@ -1,4 +1,6 @@
 import { useAuth } from "../hooks/useAuth.jsx";
+import { Link } from "react-router-dom";
+
 
 export default function Account() {
   const { user, logout } = useAuth();
@@ -12,6 +14,12 @@ export default function Account() {
         <p className="text-text-muted text-xs mb-1">Email</p>
         <p>{user?.email}</p>
       </div>
+      <Link
+        to="/weight"
+        className="block w-full bg-bg-card border border-bg-border text-center py-3 rounded-xl font-medium mb-3"
+        >
+        Weight tracker
+        </Link>
       <button
         onClick={logout}
         className="w-full bg-bg-card border border-bg-border text-accent py-3 rounded-xl font-medium"
