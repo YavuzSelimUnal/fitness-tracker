@@ -4,6 +4,8 @@ import cors from "cors";
 import authRoutes from "./routes/auth.js";
 import exerciseRoutes from "./routes/exercises.js";
 import workoutRoutes from "./routes/workouts.js";
+import foodRoutes from "./routes/foods.js";
+import mealRoutes from "./routes/meals.js";
 
 const app = express();
 
@@ -15,6 +17,8 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/exercises", exerciseRoutes);
 app.use("/api/workouts", workoutRoutes);
+app.use("/api/foods", foodRoutes);
+app.use("/api/meals", mealRoutes);
 
 // TODO: workouts, meals, foods, chat, dashboard routes
 // (see /docs schema for the full planned API surface)
