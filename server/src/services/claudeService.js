@@ -59,6 +59,36 @@ export async function parseUserMessage(message) {
     return toolCalls;
   }
 
+// Same as parseUserMessage, but reads a photo instead of text. Uses the
+// same log_meal tool, so everything downstream (USDA lookup, saving,
+// calorie calc) works identically regardless of whether food was
+// described in words or seen in a photo.
+export async function parseMealImage(imageBase64, mediaType, caption) {
+    const content = [
+      {
+        type: "image",
+        source: { type: "base64", media_type: mediaType, data: imageBase64 },
+      },
+      {
+        type: "text",
+        text: caption
+          ? `${caption}\n\nIdentify the food(s) in this photo and estimate quantities in grams.`
+          : "Identify the food(s) in this photo and estimate quantities in grams based on typical portion sizes and what's visible in the image.",
+      },
+    ];
+  
+    const response = await anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      system: "Look carefully at the plate/portion size shown. Estimate realistic gram quantities for each distinct food item visible. If multiple foods are present, call log_meal once with all items included in a single items array.",
+      tools: [tools[0]], // only log_meal is relevant for a photo
+      messages: [{ role: "user", content }],
+    });
+  
+    const toolCalls = response.content.filter((block) => block.type === "tool_use");
+    return toolCalls;
+  }
+
 // Step 2: Ask Sonnet (better reasoning) to write the actual coach reply,
 // given the user's recent history and whatever was just logged.
 export async function generateCoachReply({ userMessage, recentContext, justLogged }) {
