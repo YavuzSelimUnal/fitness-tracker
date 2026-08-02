@@ -11,6 +11,8 @@ import FoodLog from "./pages/FoodLog.jsx";
 import Goals from "./pages/Goals.jsx";
 import Account from "./pages/Account.jsx";
 import WeightTracker from "./pages/WeightTracker.jsx";
+import Chat from "./pages/Chat.jsx";
+
 
 
 function ProtectedRoute({ children }) {
@@ -39,6 +41,7 @@ function AppRoutes() {
       <Route path="/progress" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
       <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
       <Route path="/weight" element={<ProtectedRoute><WeightTracker /></ProtectedRoute>} />
+      <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
     </Routes>
   );
 }

@@ -8,6 +8,7 @@ import foodRoutes from "./routes/foods.js";
 import mealRoutes from "./routes/meals.js";
 import goalRoutes from "./routes/goals.js";
 import weightRoutes from "./routes/weight.js";
+import chatRoutes from "./routes/chat.js";
 
 
 const app = express();
@@ -24,6 +25,7 @@ app.use("/api/foods", foodRoutes);
 app.use("/api/meals", mealRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/weight", weightRoutes);
+app.use("/api/chat", chatRoutes);
 
 // TODO: workouts, meals, foods, chat, dashboard routes
 // (see /docs schema for the full planned API surface)

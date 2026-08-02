@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../lib/api.js";
+import { Link } from "react-router-dom";
+import { MessageCircle } from "lucide-react";
 
 export default function Dashboard() {
   const { logout } = useAuth();
@@ -100,6 +102,19 @@ export default function Dashboard() {
           Log out
         </button>
       </div>
+
+      <Link
+        to="/chat"
+        className="flex items-center gap-3 bg-bg-card border border-bg-border rounded-2xl p-4 mb-6"
+      >
+        <div className="bg-accent/10 p-2.5 rounded-full">
+          <MessageCircle className="text-accent" size={18} />
+        </div>
+        <div>
+          <p className="text-sm font-medium">Talk to your coach</p>
+          <p className="text-text-muted text-xs">Log naturally or ask for advice</p>
+        </div>
+      </Link>
 
       <p className="font-medium mb-4">Daily nutrition</p>
 
