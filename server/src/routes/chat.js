@@ -6,9 +6,19 @@ import { parseUserMessage, parsePhotoMessage, generateCoachReply } from "../serv
 import { buildRecentContext } from "../services/contextBuilder.js";
 import { searchUsdaFoods } from "../services/usdaService.js";
 import { calculateMealCalories, calculateCaloriesBurned } from "../services/calorieCalc.js";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Limits each user to 30 AI requests per 15 minutes — generous for normal
+// use, but stops runaway costs from a bug or accidental spam.
+const chatLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 30,
+    keyGenerator: (req) => req.userId, // limit per logged-in user, not per IP
+    message: { error: "You're sending messages too quickly. Try again in a few minutes." },
+  });
 
 // Resolves one food item (name + grams) against the food cache/USDA,
 // saves it as a meal entry, and returns a summary object for the reply.
@@ -60,7 +70,7 @@ router.get("/history", requireAuth, async (req, res) => {
 });
 
 // POST /api/chat — text-based message
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", requireAuth, chatLimiter, async (req, res) => {
   const { message } = req.body;
   if (!message) {
     return res.status(400).json({ error: "Message is required" });
@@ -152,7 +162,7 @@ router.post("/", requireAuth, async (req, res) => {
 
 // POST /api/chat/photo — handles any photo; the model decides if it's
 // food (logs it) or a body/progress photo (gives coaching observations)
-router.post("/photo", requireAuth, upload.single("photo"), async (req, res) => {
+router.post("/photo", requireAuth, chatLimiter, upload.single("photo"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No photo provided" });
   }
