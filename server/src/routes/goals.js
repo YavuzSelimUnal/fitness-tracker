@@ -1,6 +1,14 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { z } from "zod";
+
+const goalSchema = z.object({
+    periodType: z.enum(["weekly", "monthly"]).optional(),
+    calorieTarget: z.number().positive().optional(),
+    workoutCountTarget: z.number().int().positive().optional(),
+    targetWeightKg: z.number().positive().optional(),
+  });
 
 const router = Router();
 
@@ -15,7 +23,11 @@ router.get("/current", requireAuth, async (req, res) => {
 
 // POST /api/goals — create a new goal (or replace the current one)
 router.post("/", requireAuth, async (req, res) => {
-  const { periodType, calorieTarget, workoutCountTarget, targetWeightKg } = req.body;
+    const parsed = goalSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    const { periodType, calorieTarget, workoutCountTarget, targetWeightKg } = parsed.data;
 
   const goal = await prisma.goal.create({
     data: {

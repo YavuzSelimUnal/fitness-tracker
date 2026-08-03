@@ -2,6 +2,13 @@ import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { calculateMealCalories } from "../services/calorieCalc.js";
+import { z } from "zod";
+
+const logMealSchema = z.object({
+    foodItemId: z.string().uuid(),
+    quantityG: z.number().positive(),
+    mealType: z.enum(["breakfast", "lunch", "dinner", "snack"]).optional(),
+  });
 
 const router = Router();
 
@@ -17,7 +24,11 @@ router.get("/", requireAuth, async (req, res) => {
 
 // POST /api/meals — log a food entry
 router.post("/", requireAuth, async (req, res) => {
-  const { foodItemId, quantityG, mealType } = req.body;
+    const parsed = logMealSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    const { foodItemId, quantityG, mealType } = parsed.data;
 
   const foodItem = await prisma.foodItem.findUnique({ where: { id: foodItemId } });
   if (!foodItem) {

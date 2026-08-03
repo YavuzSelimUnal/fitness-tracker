@@ -1,6 +1,11 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { z } from "zod";
+
+const logWeightSchema = z.object({
+  weightKg: z.number().positive(),
+});
 
 const router = Router();
 
@@ -17,10 +22,11 @@ router.get("/", requireAuth, async (req, res) => {
 // (their profile weight is what the calorie-burn calculation uses, so we
 // keep it in sync automatically whenever a new weight is logged)
 router.post("/", requireAuth, async (req, res) => {
-  const { weightKg } = req.body;
-  if (!weightKg) {
-    return res.status(400).json({ error: "weightKg is required" });
-  }
+    const parsed = logWeightSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    const { weightKg } = parsed.data;
 
   const [log] = await prisma.$transaction([
     prisma.weightLog.create({

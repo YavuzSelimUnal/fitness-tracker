@@ -2,6 +2,16 @@ import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { calculateCaloriesBurned } from "../services/calorieCalc.js";
+import { z } from "zod";
+
+const logWorkoutSchema = z.object({
+    exerciseId: z.string().uuid(),
+    sets: z.number().int().positive().optional(),
+    reps: z.number().int().positive().optional(),
+    weightKg: z.number().positive().optional(),
+    durationMin: z.number().positive().optional(),
+    distanceKm: z.number().positive().optional(),
+  });
 
 const router = Router();
 
@@ -17,7 +27,11 @@ router.get("/", requireAuth, async (req, res) => {
 
 // POST /api/workouts — log a new workout
 router.post("/", requireAuth, async (req, res) => {
-  const { exerciseId, sets, reps, weightKg, durationMin, distanceKm } = req.body;
+    const parsed = logWorkoutSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    const { exerciseId, sets, reps, weightKg, durationMin, distanceKm } = parsed.data;
 
   const exercise = await prisma.exercise.findUnique({ where: { id: exerciseId } });
   if (!exercise) {
