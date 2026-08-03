@@ -50,7 +50,7 @@ export default function Chat() {
         const formData = new FormData();
         formData.append("photo", currentPhoto);
         if (currentCaption) formData.append("caption", currentCaption);
-        res = await api.post("/chat/meal-photo", formData, {
+        res = await api.post("/chat/photo", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } else {

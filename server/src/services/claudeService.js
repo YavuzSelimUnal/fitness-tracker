@@ -2,12 +2,10 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// Tool definitions — this is how we get Claude to return structured data
-// instead of just free text, so we can actually save it to the database.
 const tools = [
   {
     name: "log_meal",
-    description: "Log food the user says they ate. Estimate quantity directly in grams using your own knowledge of typical portion sizes.",
+    description: "Log food the user says they ate, or that's visible in a photo. Estimate quantity directly in grams using your own knowledge of typical portion sizes.",
     input_schema: {
       type: "object",
       properties: {
@@ -43,54 +41,60 @@ const tools = [
   },
 ];
 
-// Step 1: Ask Haiku (cheap, fast) to read the message and decide whether
-// it contains something to log. Returns any tool calls it made, plus
-// whether it made any at all.
+// Step 1: ask Haiku to read the message and decide whether it contains
+// something to log. Returns any tool calls it made.
 export async function parseUserMessage(message) {
-    const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
-      system: "The user's message may describe multiple separate things to log — for example, both a meal AND a workout in the same message. Check for each type independently, and call every matching tool (log_meal, log_workout) that applies, not just the first one you notice.",
-      tools,
-      messages: [{ role: "user", content: message }],
-    });
-  
-    const toolCalls = response.content.filter((block) => block.type === "tool_use");
-    return toolCalls;
-  }
+  const response = await anthropic.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 1024,
+    system: "The user's message may describe multiple separate things to log — for example, both a meal AND a workout in the same message. Check for each type independently, and call every matching tool (log_meal, log_workout) that applies, not just the first one you notice.",
+    tools,
+    messages: [{ role: "user", content: message }],
+  });
 
-// Same as parseUserMessage, but reads a photo instead of text. Uses the
-// same log_meal tool, so everything downstream (USDA lookup, saving,
-// calorie calc) works identically regardless of whether food was
-// described in words or seen in a photo.
-export async function parseMealImage(imageBase64, mediaType, caption) {
-    const content = [
-      {
-        type: "image",
-        source: { type: "base64", media_type: mediaType, data: imageBase64 },
-      },
-      {
-        type: "text",
-        text: caption
-          ? `${caption}\n\nIdentify the food(s) in this photo and estimate quantities in grams.`
-          : "Identify the food(s) in this photo and estimate quantities in grams based on typical portion sizes and what's visible in the image.",
-      },
-    ];
-  
-    const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
-      system: "Look carefully at the plate/portion size shown. Estimate realistic gram quantities for each distinct food item visible. If multiple foods are present, call log_meal once with all items included in a single items array.",
-      tools: [tools[0]], // only log_meal is relevant for a photo
-      messages: [{ role: "user", content }],
-    });
-  
-    const toolCalls = response.content.filter((block) => block.type === "tool_use");
-    return toolCalls;
-  }
+  const toolCalls = response.content.filter((block) => block.type === "tool_use");
+  return toolCalls;
+}
 
-// Step 2: Ask Sonnet (better reasoning) to write the actual coach reply,
-// given the user's recent history and whatever was just logged.
+// Handles any photo sent in chat — the model itself decides whether it's
+// a meal photo (logs it via log_meal) or a body/progress photo (gives
+// coaching observations instead, no tool call).
+export async function parsePhotoMessage(imageBase64, mediaType, caption, recentContext) {
+  const systemPrompt = `You are a supportive fitness coach reviewing a photo the user sent.
+
+First, determine what kind of photo this is:
+- If it shows FOOD: call the log_meal tool with your best estimate of each food item and its quantity in grams based on typical portions and what's visible. Do not write a text reply yourself for this case — the app will generate a response after logging.
+- If it shows a PERSON'S BODY (a progress/physique photo): do NOT call any tool. Instead, respond directly with general, encouraging observations about visible posture, areas of visible muscle development, and practical training suggestions.
+  - Do NOT estimate body fat percentage, weight, or any precise numeric body measurement from the photo — these aren't reliably estimable from an image and would be misleading. If asked directly, explain this honestly and suggest calipers, a DEXA scan, or a doctor/trainer instead.
+  - Do NOT comment on appearance/attractiveness, and avoid anything that could read as body-shaming or critical.
+  - Do NOT suggest extreme calorie restriction, excessive exercise, or rapid body-change approaches.
+  - Keep the tone like a real coach: encouraging, practical, specific to what's visible.
+- If it's neither (unclear photo), say so honestly and ask the user to clarify or resend.
+
+User's recent training/nutrition context:
+${recentContext}`;
+
+  const content = [
+    { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } },
+    { type: "text", text: caption || "Here's a photo." },
+  ];
+
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 700,
+    system: systemPrompt,
+    tools: [tools[0]],
+    messages: [{ role: "user", content }],
+  });
+
+  const toolCalls = response.content.filter((block) => block.type === "tool_use");
+  const textReply = response.content.find((block) => block.type === "text")?.text || "";
+
+  return { toolCalls, textReply };
+}
+
+// Step 2: ask Sonnet to write the actual coach reply, given the user's
+// recent history and whatever was just logged.
 export async function generateCoachReply({ userMessage, recentContext, justLogged }) {
   const systemPrompt = `You are a supportive, knowledgeable fitness and nutrition coach inside a personal tracking app.
 You have access to the user's recent workout and meal history below. Use it to give genuinely useful,
