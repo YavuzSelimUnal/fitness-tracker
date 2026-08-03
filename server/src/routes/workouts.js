@@ -45,4 +45,49 @@ router.post("/", requireAuth, async (req, res) => {
   res.status(201).json(session);
 });
 
+// PATCH /api/workouts/entry/:id — edit a single workout entry
+router.patch("/entry/:id", requireAuth, async (req, res) => {
+    const { sets, reps, weightKg, durationMin } = req.body;
+  
+    const entry = await prisma.workoutEntry.findUnique({
+      where: { id: req.params.id },
+      include: { session: true, exercise: true },
+    });
+  
+    if (!entry || entry.session.userId !== req.userId) {
+      return res.status(404).json({ error: "Workout entry not found" });
+    }
+  
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    const caloriesBurned = calculateCaloriesBurned({
+      metValue: entry.exercise.metValue,
+      weightKg: user.weightKg,
+      durationMin: durationMin ?? entry.durationMin,
+    });
+  
+    const updated = await prisma.workoutEntry.update({
+      where: { id: req.params.id },
+      data: { sets, reps, weightKg, durationMin, caloriesBurned },
+      include: { exercise: true },
+    });
+  
+    res.json(updated);
+  });
+  
+  // DELETE /api/workouts/entry/:id — remove a single workout entry
+  router.delete("/entry/:id", requireAuth, async (req, res) => {
+    const entry = await prisma.workoutEntry.findUnique({
+      where: { id: req.params.id },
+      include: { session: true },
+    });
+  
+    if (!entry || entry.session.userId !== req.userId) {
+      return res.status(404).json({ error: "Workout entry not found" });
+    }
+  
+    await prisma.workoutEntry.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  });
+
+
 export default router;

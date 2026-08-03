@@ -43,4 +43,46 @@ router.post("/", requireAuth, async (req, res) => {
   res.status(201).json(mealLog);
 });
 
+// PATCH /api/meals/entry/:id — edit a single meal entry's quantity
+router.patch("/entry/:id", requireAuth, async (req, res) => {
+    const { quantityG } = req.body;
+  
+    const entry = await prisma.mealEntry.findUnique({
+      where: { id: req.params.id },
+      include: { mealLog: true, foodItem: true },
+    });
+  
+    if (!entry || entry.mealLog.userId !== req.userId) {
+      return res.status(404).json({ error: "Meal entry not found" });
+    }
+  
+    const calories = calculateMealCalories({
+      caloriesPer100g: entry.foodItem.caloriesPer100g,
+      quantityG,
+    });
+  
+    const updated = await prisma.mealEntry.update({
+      where: { id: req.params.id },
+      data: { quantityG, calories },
+      include: { foodItem: true },
+    });
+  
+    res.json(updated);
+  });
+  
+  // DELETE /api/meals/entry/:id — remove a single meal entry
+  router.delete("/entry/:id", requireAuth, async (req, res) => {
+    const entry = await prisma.mealEntry.findUnique({
+      where: { id: req.params.id },
+      include: { mealLog: true },
+    });
+  
+    if (!entry || entry.mealLog.userId !== req.userId) {
+      return res.status(404).json({ error: "Meal entry not found" });
+    }
+  
+    await prisma.mealEntry.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  });
+
 export default router;

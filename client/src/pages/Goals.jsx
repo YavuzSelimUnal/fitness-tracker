@@ -163,3 +163,19 @@ export default function Goals() {
     </div>
   );
 }
+
+function HabitCard({ title, activeDays, last7Days }) {
+    const count = last7Days.filter((d) => activeDays.has(d)).length;
+    return (
+      <div className="flex-1 bg-bg-card border border-bg-border rounded-2xl p-4">
+        <p className="text-sm mb-1">{title}</p>
+        <p className="text-text-muted text-[10px] mb-3">Last 7 days</p>
+        <div className="grid grid-cols-7 gap-1 mb-3">
+          {last7Days.map((day) => (
+            <div key={day} className="h-4 rounded-sm" style={{ backgroundColor: activeDays.has(day) ? "#e8543a" : "#2a2b2e" }} />
+          ))}
+        </div>
+        <p className="text-xs">{count}/7 this week</p>
+      </div>
+    );
+  }

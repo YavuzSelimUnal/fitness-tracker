@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth.jsx";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import api from "../lib/api.js";
+import { ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { MessageCircle } from "lucide-react";
+import api from "../lib/api.js";
+import MealDetailModal from "../components/MealDetailModal.jsx";
+import WorkoutDetailModal from "../components/WorkoutDetailModal.jsx";
 
 export default function Dashboard() {
   const { logout } = useAuth();
@@ -12,6 +13,8 @@ export default function Dashboard() {
   const [goal, setGoal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedMealEntry, setSelectedMealEntry] = useState(null);
+  const [selectedWorkoutEntry, setSelectedWorkoutEntry] = useState(null);
 
   useEffect(() => {
     Promise.all([api.get("/workouts"), api.get("/meals"), api.get("/goals/current")])
@@ -33,29 +36,21 @@ export default function Dashboard() {
   }
 
   function goToNextDay() {
-    if (isToday) return; // can't go into the future
+    if (isToday) return;
     const next = new Date(selectedDate);
     next.setDate(next.getDate() + 1);
     setSelectedDate(next);
   }
 
   const daysMeals = meals.filter((m) => new Date(m.date).toDateString() === selectedDateString);
-  const daysEntries = daysMeals.flatMap((m) => m.entries);
+  const daysEntries = daysMeals.flatMap((m) => m.entries.map((e) => ({ ...e, mealLogId: m.id })));
   const daysSessions = sessions.filter((s) => new Date(s.date).toDateString() === selectedDateString);
+  const daysWorkoutEntries = daysSessions.flatMap((s) => s.entries);
 
   const consumed = daysEntries.reduce((sum, e) => sum + (e.calories || 0), 0);
-  const protein = daysEntries.reduce(
-    (sum, e) => sum + (e.foodItem?.proteinPer100g || 0) * (e.quantityG / 100),
-    0
-  );
-  const carbs = daysEntries.reduce(
-    (sum, e) => sum + (e.foodItem?.carbsPer100g || 0) * (e.quantityG / 100),
-    0
-  );
-  const fat = daysEntries.reduce(
-    (sum, e) => sum + (e.foodItem?.fatPer100g || 0) * (e.quantityG / 100),
-    0
-  );
+  const protein = daysEntries.reduce((sum, e) => sum + (e.foodItem?.proteinPer100g || 0) * (e.quantityG / 100), 0);
+  const carbs = daysEntries.reduce((sum, e) => sum + (e.foodItem?.carbsPer100g || 0) * (e.quantityG / 100), 0);
+  const fat = daysEntries.reduce((sum, e) => sum + (e.foodItem?.fatPer100g || 0) * (e.quantityG / 100), 0);
 
   const calorieTarget = goal?.calorieTarget || 2000;
   const remaining = Math.max(0, calorieTarget - consumed);
@@ -63,16 +58,39 @@ export default function Dashboard() {
   const circumference = 2 * Math.PI * 50;
   const dashOffset = circumference - (percentFilled / 100) * circumference;
 
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return d.toDateString();
-  });
-  const workoutDays = new Set(sessions.map((s) => new Date(s.date).toDateString()));
-  const mealDays = new Set(meals.map((m) => new Date(m.date).toDateString()));
+  // Updates local state after editing a meal entry, without re-fetching everything
+  function handleMealUpdated(updatedEntry) {
+    setMeals((prev) =>
+      prev.map((m) => ({
+        ...m,
+        entries: m.entries.map((e) => (e.id === updatedEntry.id ? { ...e, ...updatedEntry } : e)),
+      }))
+    );
+  }
+
+  function handleMealDeleted(entryId) {
+    setMeals((prev) =>
+      prev.map((m) => ({ ...m, entries: m.entries.filter((e) => e.id !== entryId) }))
+    );
+  }
+
+  function handleWorkoutUpdated(updatedEntry) {
+    setSessions((prev) =>
+      prev.map((s) => ({
+        ...s,
+        entries: s.entries.map((e) => (e.id === updatedEntry.id ? { ...e, ...updatedEntry } : e)),
+      }))
+    );
+  }
+
+  function handleWorkoutDeleted(entryId) {
+    setSessions((prev) =>
+      prev.map((s) => ({ ...s, entries: s.entries.filter((e) => e.id !== entryId) }))
+    );
+  }
 
   if (loading) {
-    return <div className="min-h-screen bg-bg text-text-muted p-6">Loading…</div>;
+    return <div className="text-text-muted">Loading…</div>;
   }
 
   return (
@@ -147,34 +165,69 @@ export default function Dashboard() {
         <MacroBar label="Carbs" value={carbs} color="#4fbf7a" />
       </div>
 
-      {daysSessions.length > 0 && (
+      {daysWorkoutEntries.length > 0 && (
         <div className="mb-6">
           <p className="font-medium mb-3">Workouts</p>
-          <div className="bg-bg-card border border-bg-border rounded-2xl p-4 space-y-2">
-            {daysSessions.flatMap((session) =>
-              session.entries.map((entry) => (
-                <div key={entry.id} className="flex justify-between text-sm">
-                  <span>{entry.exercise.name}</span>
-                  <span className="text-text-muted">
-                    {entry.sets && entry.reps
-                      ? `${entry.sets}x${entry.reps} @ ${entry.weightKg || 0}kg`
-                      : entry.durationMin
-                      ? `${entry.durationMin} min`
-                      : ""}
-                    {entry.caloriesBurned ? ` · ${entry.caloriesBurned} kcal` : ""}
-                  </span>
-                </div>
-              ))
-            )}
+          <div className="bg-bg-card border border-bg-border rounded-2xl p-2">
+            {daysWorkoutEntries.map((entry) => (
+              <button
+                key={entry.id}
+                onClick={() => setSelectedWorkoutEntry(entry)}
+                className="w-full flex justify-between text-sm p-3 rounded-xl hover:bg-bg text-left"
+              >
+                <span>{entry.exercise.name}</span>
+                <span className="text-text-muted">
+                  {entry.sets && entry.reps
+                    ? `${entry.sets}x${entry.reps} @ ${entry.weightKg || 0}kg`
+                    : entry.durationMin
+                    ? `${entry.durationMin} min`
+                    : ""}
+                  {entry.caloriesBurned ? ` · ${entry.caloriesBurned} kcal` : ""}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      <p className="font-medium mb-3">Habits</p>
-      <div className="flex gap-3">
-        <HabitCard title="Workouts" activeDays={workoutDays} last7Days={last7Days} />
-        <HabitCard title="Food logging" activeDays={mealDays} last7Days={last7Days} />
-      </div>
+      {daysEntries.length > 0 && (
+        <div className="mb-6">
+          <p className="font-medium mb-3">Meals</p>
+          <div className="bg-bg-card border border-bg-border rounded-2xl p-2">
+            {daysEntries.map((entry) => (
+              <button
+                key={entry.id}
+                onClick={() => setSelectedMealEntry(entry)}
+                className="w-full flex justify-between text-sm p-3 rounded-xl hover:bg-bg text-left"
+              >
+                <span>{entry.foodItem.name}</span>
+                <span className="text-text-muted">
+                  {entry.quantityG}g · {Math.round(entry.calories)} kcal
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      {selectedMealEntry && (
+        <MealDetailModal
+          entry={selectedMealEntry}
+          onClose={() => setSelectedMealEntry(null)}
+          onUpdated={handleMealUpdated}
+          onDeleted={handleMealDeleted}
+        />
+      )}
+
+      {selectedWorkoutEntry && (
+        <WorkoutDetailModal
+          entry={selectedWorkoutEntry}
+          onClose={() => setSelectedWorkoutEntry(null)}
+          onUpdated={handleWorkoutUpdated}
+          onDeleted={handleWorkoutDeleted}
+        />
+      )}
     </div>
   );
 }
@@ -187,22 +240,6 @@ function MacroBar({ label, value, color }) {
         <div className="rounded h-1.5" style={{ width: `${Math.min(100, value)}%`, backgroundColor: color }} />
       </div>
       <p className="text-xs text-text-muted">{Math.round(value)}g</p>
-    </div>
-  );
-}
-
-function HabitCard({ title, activeDays, last7Days }) {
-  const count = last7Days.filter((d) => activeDays.has(d)).length;
-  return (
-    <div className="flex-1 bg-bg-card border border-bg-border rounded-2xl p-4">
-      <p className="text-sm mb-1">{title}</p>
-      <p className="text-text-muted text-[10px] mb-3">Last 7 days</p>
-      <div className="grid grid-cols-7 gap-1 mb-3">
-        {last7Days.map((day) => (
-          <div key={day} className="h-4 rounded-sm" style={{ backgroundColor: activeDays.has(day) ? "#e8543a" : "#2a2b2e" }} />
-        ))}
-      </div>
-      <p className="text-xs">{count}/7 this week</p>
     </div>
   );
 }
