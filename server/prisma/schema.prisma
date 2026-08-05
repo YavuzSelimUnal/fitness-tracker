@@ -24,6 +24,7 @@ model User {
   chatMessages    ChatMessage[]
   customExercises Exercise[]      @relation("CustomExercises")
   goals           Goal[]
+  savedMeals      SavedMeal[]
 }
 
 model WeightLog {
@@ -89,6 +90,7 @@ model FoodItem {
   cachedAt         DateTime @default(now())
 
   mealEntries MealEntry[]
+  savedMealItems  SavedMealItem[]
 
   @@index([name])
   @@index([externalId, source])
@@ -141,4 +143,24 @@ model Goal {
   createdAt          DateTime @default(now())
 
   @@index([userId, startDate])
+}
+
+model SavedMeal {
+  id        String            @id @default(uuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime          @default(now())
+  items     SavedMealItem[]
+
+  @@index([userId])
+}
+
+model SavedMealItem {
+  id          String     @id @default(uuid())
+  savedMealId String
+  savedMeal   SavedMeal  @relation(fields: [savedMealId], references: [id], onDelete: Cascade)
+  foodItemId  String
+  foodItem    FoodItem   @relation(fields: [foodItemId], references: [id])
+  quantityG   Float
 }
