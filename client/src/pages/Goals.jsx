@@ -2,6 +2,29 @@ import { useState, useEffect } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import api from "../lib/api.js";
 
+// Counts consecutive days (ending today or yesterday) where the user
+// logged either a meal or a workout. Breaks on the first gap found.
+function calculateStreak(meals, sessions) {
+  const activeDays = new Set([
+    ...meals.map((m) => new Date(m.date).toDateString()),
+    ...sessions.map((s) => new Date(s.date).toDateString()),
+  ]);
+
+  let streak = 0;
+  let cursor = new Date();
+
+  if (!activeDays.has(cursor.toDateString())) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  while (activeDays.has(cursor.toDateString())) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
+}
+
 export default function Goals() {
   const [goal, setGoal] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -10,7 +33,7 @@ export default function Goals() {
   const [targetWeightKg, setTargetWeightKg] = useState("");
   const [meals, setMeals] = useState([]);
   const [sessions, setSessions] = useState([]);
-  const [range, setRange] = useState(7); // 7 = week, 30 = month
+  const [range, setRange] = useState(7);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,8 +63,6 @@ export default function Goals() {
     setEditing(false);
   }
 
-  // Build one data point per day for the last `range` days, e.g.
-  // [{ label: "Mon", calories: 1800, workouts: 1 }, ...]
   const chartData = Array.from({ length: range }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (range - 1 - i));
@@ -61,6 +82,8 @@ export default function Goals() {
     };
   });
 
+  const streak = calculateStreak(meals, sessions);
+
   if (loading) {
     return <p className="text-text-muted text-sm">Loading…</p>;
   }
@@ -68,6 +91,18 @@ export default function Goals() {
   return (
     <div>
       <h1 className="text-xl font-semibold mb-6">Progress</h1>
+
+      <div className="flex items-center gap-3 bg-bg-card border border-bg-border rounded-2xl p-4 mb-6">
+        <div className="bg-accent/10 p-2.5 rounded-full">
+          <span className="text-lg">🔥</span>
+        </div>
+        <div>
+          <p className="text-lg font-semibold">{streak} day{streak === 1 ? "" : "s"}</p>
+          <p className="text-text-muted text-xs">
+            {streak === 0 ? "Log something today to start a streak" : "Current logging streak"}
+          </p>
+        </div>
+      </div>
 
       <div className="flex gap-2 mb-6">
         <button
@@ -163,19 +198,3 @@ export default function Goals() {
     </div>
   );
 }
-
-function HabitCard({ title, activeDays, last7Days }) {
-    const count = last7Days.filter((d) => activeDays.has(d)).length;
-    return (
-      <div className="flex-1 bg-bg-card border border-bg-border rounded-2xl p-4">
-        <p className="text-sm mb-1">{title}</p>
-        <p className="text-text-muted text-[10px] mb-3">Last 7 days</p>
-        <div className="grid grid-cols-7 gap-1 mb-3">
-          {last7Days.map((day) => (
-            <div key={day} className="h-4 rounded-sm" style={{ backgroundColor: activeDays.has(day) ? "#e8543a" : "#2a2b2e" }} />
-          ))}
-        </div>
-        <p className="text-xs">{count}/7 this week</p>
-      </div>
-    );
-  }
