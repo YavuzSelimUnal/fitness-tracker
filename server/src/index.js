@@ -10,12 +10,14 @@ import goalRoutes from "./routes/goals.js";
 import weightRoutes from "./routes/weight.js";
 import chatRoutes from "./routes/chat.js";
 import savedMealRoutes from "./routes/savedMeals.js";
+import helmet from "helmet";
 
 
 
 const app = express();
+app.use(helmet());
 
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
+app.use(cors({ origin: true })); // reflects any origin — fine for local development/testing
 app.use(express.json());
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
