@@ -77,4 +77,10 @@ router.get("/me", requireAuth, async (req, res) => {
   res.json(user);
 });
 
+// DELETE /api/auth/me — permanently delete the account and all associated data
+router.delete("/me", requireAuth, async (req, res) => {
+  await prisma.user.delete({ where: { id: req.userId } });
+  res.status(204).send();
+});
+
 export default router;

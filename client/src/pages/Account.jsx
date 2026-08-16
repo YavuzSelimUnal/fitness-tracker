@@ -4,27 +4,32 @@ import { useAuth } from "../hooks/useAuth.jsx";
 import api from "../lib/api.js";
 
 export default function Account() {
-  const { user, logout } = useAuth();
+  const { user, logout, deleteAccount } = useAuth();
   const [customExercises, setCustomExercises] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     api.get("/exercises").then((res) => {
-      // Only show exercises this specific user created via chat
       setCustomExercises(res.data.filter((ex) => ex.isCustom && ex.createdById === user?.id));
     });
   }, [user]);
 
-  async function handleSave(id) {
+  async function handleSaveExercise(id) {
     const res = await api.patch(`/exercises/${id}`, { metValue: Number(editValue) });
     setCustomExercises((prev) => prev.map((ex) => (ex.id === id ? res.data : ex)));
     setEditingId(null);
   }
 
+  async function handleDelete() {
+    await deleteAccount();
+  }
+
   return (
     <div>
       <h1 className="text-xl font-semibold mb-6">Account</h1>
+
       <div className="bg-bg-card border border-bg-border rounded-2xl p-5 mb-4">
         <p className="text-text-muted text-xs mb-1">Name</p>
         <p className="mb-4">{user?.name || "—"}</p>
@@ -58,13 +63,16 @@ export default function Account() {
                         onChange={(e) => setEditValue(e.target.value)}
                         className="w-16 px-2 py-1 rounded bg-bg border border-bg-border text-text text-sm"
                       />
-                      <button onClick={() => handleSave(ex.id)} className="text-accent text-sm">
+                      <button onClick={() => handleSaveExercise(ex.id)} className="text-accent text-sm">
                         Save
                       </button>
                     </div>
                   ) : (
                     <button
-                      onClick={() => { setEditingId(ex.id); setEditValue(ex.metValue); }}
+                      onClick={() => {
+                        setEditingId(ex.id);
+                        setEditValue(ex.metValue);
+                      }}
                       className="text-text-muted text-xs"
                     >
                       MET: {ex.metValue} (edit)
@@ -79,10 +87,38 @@ export default function Account() {
 
       <button
         onClick={logout}
-        className="w-full bg-bg-card border border-bg-border text-accent py-3 rounded-xl font-medium"
+        className="w-full bg-bg-card border border-bg-border text-accent py-3 rounded-xl font-medium mb-4"
       >
         Log out
       </button>
+
+      <div className="pt-6 border-t border-bg-border">
+        {!confirmingDelete ? (
+          <button onClick={() => setConfirmingDelete(true)} className="w-full text-accent text-sm">
+            Delete account
+          </button>
+        ) : (
+          <div className="bg-bg-card border border-accent rounded-xl p-4">
+            <p className="text-sm mb-3">
+              This permanently deletes your account and all data — workouts, meals, goals, chat history. This can't be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                className="flex-1 bg-accent text-accent-dark py-2 rounded-lg text-sm font-medium"
+              >
+                Yes, delete everything
+              </button>
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                className="flex-1 border border-bg-border py-2 rounded-lg text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
