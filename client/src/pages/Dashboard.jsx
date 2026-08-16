@@ -142,16 +142,16 @@ export default function Dashboard() {
           <p className="text-text-muted text-xs">Remaining</p>
         </div>
         <svg width="130" height="130" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r="50" fill="none" stroke="#2a2b2e" strokeWidth="9" />
-          <circle
-            cx="60" cy="60" r="50" fill="none" stroke="#e8543a" strokeWidth="9"
-            strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashOffset}
-            transform="rotate(-90 60 60)"
-          />
-          <text x="60" y="56" textAnchor="middle" fill="#f4f4f5" fontSize="22" fontWeight="600">
+        <circle cx="60" cy="60" r="50" fill="none" style={{ stroke: "var(--color-bg-border)" }} strokeWidth="9" />
+        <circle
+          cx="60" cy="60" r="50" fill="none" style={{ stroke: "var(--color-accent)" }} strokeWidth="9"
+          strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={dashOffset}
+          transform="rotate(-90 60 60)"
+        />
+          <text x="60" y="56" textAnchor="middle" style={{ fill: "var(--color-text)" }} fontSize="22" fontWeight="600">
             {Math.round(consumed)}
           </text>
-          <text x="60" y="74" textAnchor="middle" fill="#8a8a8d" fontSize="10">Consumed</text>
+          <text x="60" y="74" textAnchor="middle" style={{ fill: "var(--color-text-muted)" }} fontSize="10">Consumed</text>
         </svg>
         <div className="text-center">
           <p className="text-lg font-semibold">{calorieTarget}</p>

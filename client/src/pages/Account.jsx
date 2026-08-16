@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import api from "../lib/api.js";
+import { useTheme } from "../hooks/useTheme.jsx";
 
 export default function Account() {
   const { user, logout, deleteAccount } = useAuth();
@@ -9,6 +10,7 @@ export default function Account() {
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     api.get("/exercises").then((res) => {
@@ -36,6 +38,13 @@ export default function Account() {
         <p className="text-text-muted text-xs mb-1">Email</p>
         <p>{user?.email}</p>
       </div>
+
+      <button
+        onClick={toggleTheme}
+        className="w-full bg-bg-card border border-bg-border py-3 rounded-xl font-medium mb-3 flex items-center justify-center gap-2"
+      >
+        {theme === "dark" ? "☀️ Switch to light mode" : "🌙 Switch to dark mode"}
+      </button>
 
       <Link
         to="/weight"

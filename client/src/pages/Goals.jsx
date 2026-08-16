@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import api from "../lib/api.js";
+import { useTheme } from "../hooks/useTheme.jsx";
 
-// Counts consecutive days (ending today or yesterday) where the user
-// logged either a meal or a workout. Breaks on the first gap found.
 function calculateStreak(meals, sessions) {
   const activeDays = new Set([
     ...meals.map((m) => new Date(m.date).toDateString()),
@@ -26,6 +25,7 @@ function calculateStreak(meals, sessions) {
 }
 
 export default function Goals() {
+  const { theme } = useTheme();
   const [goal, setGoal] = useState(null);
   const [editing, setEditing] = useState(false);
   const [calorieTarget, setCalorieTarget] = useState("");
@@ -35,6 +35,17 @@ export default function Goals() {
   const [sessions, setSessions] = useState([]);
   const [range, setRange] = useState(7);
   const [loading, setLoading] = useState(true);
+  const [colors, setColors] = useState({ accent: "#e8543a", border: "#2a2b2e", muted: "#8a8a8d", card: "#19191b" });
+
+  useEffect(() => {
+    const styles = getComputedStyle(document.documentElement);
+    setColors({
+      accent: styles.getPropertyValue("--color-accent").trim(),
+      border: styles.getPropertyValue("--color-bg-border").trim(),
+      muted: styles.getPropertyValue("--color-text-muted").trim(),
+      card: styles.getPropertyValue("--color-bg-card").trim(),
+    });
+  }, [theme]);
 
   useEffect(() => {
     Promise.all([api.get("/goals/current"), api.get("/meals"), api.get("/workouts")])
@@ -123,11 +134,11 @@ export default function Goals() {
         <p className="text-sm mb-3">Calories per day</p>
         <ResponsiveContainer width="100%" height={160}>
           <LineChart data={chartData}>
-            <CartesianGrid stroke="#2a2b2e" vertical={false} />
-            <XAxis dataKey="label" stroke="#8a8a8d" fontSize={11} />
-            <YAxis stroke="#8a8a8d" fontSize={11} width={35} />
-            <Tooltip contentStyle={{ background: "#19191b", border: "1px solid #2a2b2e", fontSize: 12 }} />
-            <Line type="monotone" dataKey="calories" stroke="#e8543a" strokeWidth={2} dot={false} />
+            <CartesianGrid stroke={colors.border} vertical={false} />
+            <XAxis dataKey="label" stroke={colors.muted} fontSize={11} />
+            <YAxis stroke={colors.muted} fontSize={11} width={35} />
+            <Tooltip contentStyle={{ background: colors.card, border: `1px solid ${colors.border}`, fontSize: 12 }} />
+            <Line type="monotone" dataKey="calories" stroke={colors.accent} strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -136,11 +147,11 @@ export default function Goals() {
         <p className="text-sm mb-3">Workouts per day</p>
         <ResponsiveContainer width="100%" height={160}>
           <BarChart data={chartData}>
-            <CartesianGrid stroke="#2a2b2e" vertical={false} />
-            <XAxis dataKey="label" stroke="#8a8a8d" fontSize={11} />
-            <YAxis stroke="#8a8a8d" fontSize={11} width={25} allowDecimals={false} />
-            <Tooltip contentStyle={{ background: "#19191b", border: "1px solid #2a2b2e", fontSize: 12 }} />
-            <Bar dataKey="workouts" fill="#e8543a" radius={[4, 4, 0, 0]} />
+            <CartesianGrid stroke={colors.border} vertical={false} />
+            <XAxis dataKey="label" stroke={colors.muted} fontSize={11} />
+            <YAxis stroke={colors.muted} fontSize={11} width={25} allowDecimals={false} />
+            <Tooltip contentStyle={{ background: colors.card, border: `1px solid ${colors.border}`, fontSize: 12 }} />
+            <Bar dataKey="workouts" fill={colors.accent} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

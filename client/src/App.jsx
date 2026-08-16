@@ -12,6 +12,7 @@ import Goals from "./pages/Goals.jsx";
 import Account from "./pages/Account.jsx";
 import WeightTracker from "./pages/WeightTracker.jsx";
 import Chat from "./pages/Chat.jsx";
+import { ThemeProvider } from "./hooks/useTheme.jsx";
 
 
 
@@ -48,8 +49,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root.dark {
+  --color-bg: #0c0d0f;
+  --color-bg-card: #19191b;
+  --color-bg-border: #2a2b2e;
+  --color-accent: #e8543a;
+  --color-accent-dark: #0c0d0f;
+  --color-text: #f4f4f5;
+  --color-text-muted: #8a8a8d;
+}
+
+:root.light {
+  --color-bg: #f7f7f8;
+  --color-bg-card: #ffffff;
+  --color-bg-border: #e5e5e7;
+  --color-accent: #e8543a;
+  --color-accent-dark: #ffffff;
+  --color-text: #18181b;
+  --color-text-muted: #6b6b70;
+}
