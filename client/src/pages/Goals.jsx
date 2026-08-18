@@ -48,15 +48,15 @@ export default function Goals() {
   }, [theme]);
 
   useEffect(() => {
-    Promise.all([api.get("/goals/current"), api.get("/meals"), api.get("/workouts")])
-      .then(([g, m, w]) => {
-        setGoal(g.data);
-        setMeals(m.data);
-        setSessions(w.data);
-        if (g.data) {
-          setCalorieTarget(g.data.calorieTarget || "");
-          setWorkoutCountTarget(g.data.workoutCountTarget || "");
-          setTargetWeightKg(g.data.targetWeightKg || "");
+    api.get("/dashboard")
+      .then((res) => {
+        setGoal(res.data.goal);
+        setMeals(res.data.meals);
+        setSessions(res.data.sessions);
+        if (res.data.goal) {
+          setCalorieTarget(res.data.goal.calorieTarget || "");
+          setWorkoutCountTarget(res.data.goal.workoutCountTarget || "");
+          setTargetWeightKg(res.data.goal.targetWeightKg || "");
         }
       })
       .finally(() => setLoading(false));
