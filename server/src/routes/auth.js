@@ -4,6 +4,16 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import rateLimit from "express-rate-limit";
+
+// Stricter than the chat limiter — login/signup attempts should be rare
+// under normal use, so a tight limit here specifically deters brute-force
+// password guessing and account enumeration attacks.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  message: { error: "Too many attempts. Please try again in a few minutes." },
+});
 
 const router = Router();
 
@@ -13,7 +23,7 @@ const signupSchema = z.object({
   name: z.string().optional(),
 });
 
-router.post("/signup", async (req, res) => {
+router.post("/signup", authLimiter, async (req, res) => {
   const parsed = signupSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.issues[0].message });
@@ -39,7 +49,7 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid email or password" });

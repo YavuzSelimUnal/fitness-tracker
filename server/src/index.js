@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import authRoutes from "./routes/auth.js";
 import exerciseRoutes from "./routes/exercises.js";
 import workoutRoutes from "./routes/workouts.js";
@@ -10,14 +11,28 @@ import goalRoutes from "./routes/goals.js";
 import weightRoutes from "./routes/weight.js";
 import chatRoutes from "./routes/chat.js";
 import savedMealRoutes from "./routes/savedMeals.js";
-import helmet from "helmet";
-
-
+import dashboardRoutes from "./routes/dashboard.js";
 
 const app = express();
 app.use(helmet());
+// Allow your deployed frontend always, plus localhost during local development
+const allowedOrigins = [
+  "https://fitness-tracker-three-zeta-73.vercel.app",
+  "http://localhost:5173",
+];
 
-app.use(cors({ origin: "https://fitness-tracker-three-zeta-73.vercel.app", maxAge: 600 }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  maxAge: 600,
+}));
+app.use(express.json());
+
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
@@ -29,9 +44,7 @@ app.use("/api/goals", goalRoutes);
 app.use("/api/weight", weightRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/saved-meals", savedMealRoutes);
-
-// TODO: workouts, meals, foods, chat, dashboard routes
-// (see /docs schema for the full planned API surface)
+app.use("/api/dashboard", dashboardRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
