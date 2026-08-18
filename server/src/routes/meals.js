@@ -14,11 +14,13 @@ const router = Router();
 
 // GET /api/meals — fetch this user's meal history
 router.get("/", requireAuth, async (req, res) => {
+  console.time("meals-db-query");
   const logs = await prisma.mealLog.findMany({
     where: { userId: req.userId },
     include: { entries: { include: { foodItem: true } } },
     orderBy: { date: "desc" },
   });
+  console.timeEnd("meals-db-query");
   res.json(logs);
 });
 
