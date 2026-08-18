@@ -17,7 +17,7 @@ import helmet from "helmet";
 const app = express();
 app.use(helmet());
 
-app.use(cors({ origin: true, maxAge: 600 })); // cache preflight checks for 10 minutesapp.use(express.json());
+app.use(cors({ origin: "https://fitness-tracker-three-zeta-73.vercel.app", maxAge: 600 }));
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
