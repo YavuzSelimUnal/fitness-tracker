@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api.js";
+import BarcodeScanner from "../components/BarcodeScanner.jsx";
 
 export default function LogMeal() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
-  const [cart, setCart] = useState([]); // items being built up before saving/logging
+  const [cart, setCart] = useState([]);
   const [error, setError] = useState("");
   const [savedMeals, setSavedMeals] = useState([]);
   const [saveName, setSaveName] = useState("");
   const [showSaveForm, setShowSaveForm] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,6 +72,17 @@ export default function LogMeal() {
     navigate("/");
   }
 
+  async function handleBarcodeScanned(code) {
+    setScanning(false);
+    setError("");
+    try {
+      const res = await api.get(`/barcode/${code}`);
+      addToCart(res.data);
+    } catch (err) {
+      setError(err.response?.data?.error || "Product not found. Try searching manually instead.");
+    }
+  }
+
   const totalCalories = cart.reduce((sum, item) => {
     return sum + Math.round((item.quantityG / 100) * item.food.caloriesPer100g);
   }, 0);
@@ -104,6 +117,13 @@ export default function LogMeal() {
           </div>
         </div>
       )}
+
+      <button
+        onClick={() => setScanning(true)}
+        className="w-full mb-3 bg-bg-card border border-bg-border text-text py-2 rounded-lg text-sm font-medium"
+      >
+        📷 Scan a barcode
+      </button>
 
       <form onSubmit={handleSearch} className="flex gap-2 mb-4">
         <input
@@ -189,6 +209,10 @@ export default function LogMeal() {
             </div>
           )}
         </div>
+      )}
+
+      {scanning && (
+        <BarcodeScanner onScan={handleBarcodeScanned} onClose={() => setScanning(false)} />
       )}
     </div>
   );

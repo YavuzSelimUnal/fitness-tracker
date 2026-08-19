@@ -12,6 +12,8 @@ import weightRoutes from "./routes/weight.js";
 import chatRoutes from "./routes/chat.js";
 import savedMealRoutes from "./routes/savedMeals.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import barcodeRoutes from "./routes/barcode.js";
+
 
 const app = express();
 app.use(helmet());
@@ -45,6 +47,7 @@ app.use("/api/weight", weightRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/saved-meals", savedMealRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/barcode", barcodeRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
