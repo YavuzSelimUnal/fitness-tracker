@@ -1,42 +1,38 @@
 import { useEffect, useRef } from "react";
-import { Html5Qrcode } from "html5-qrcode";
-import { Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 
 export default function BarcodeScanner({ onScan, onClose }) {
-  const scannerRef = useRef(null);
-  const containerId = "barcode-scanner-region";
+  const videoRef = useRef(null);
+  const readerRef = useRef(null);
+  const hasScannedRef = useRef(false);
 
   useEffect(() => {
-    const scanner = new Html5Qrcode(containerId);
-    scannerRef.current = scanner;
+    const reader = new BrowserMultiFormatReader();
+    readerRef.current = reader;
+    hasScannedRef.current = false;
 
-    scanner
-    .start(
-      { facingMode: "environment" },
-      {
-        fps: 10,
-        qrbox: { width: 280, height: 180 },
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-        ],
-      },
-      (decodedText) => {
-        scanner.stop().then(() => onScan(decodedText));
-      },
-      () => {}
-    )
+    reader
+      .decodeFromConstraints(
+        { video: { facingMode: "environment" } },
+        videoRef.current,
+        (result, err) => {
+          if (result && !hasScannedRef.current) {
+            hasScannedRef.current = true;
+            onScan(result.getText());
+          }
+          // err fires constantly for "no barcode found in this frame" —
+          // that's normal and expected, not a real error to react to
+        }
+      )
       .catch((err) => {
         console.error("Camera start failed:", err);
       });
 
     return () => {
-      // Clean up the camera stream when the component unmounts —
-      // otherwise the camera light stays on even after leaving this screen
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+      // Stop the camera stream when leaving this screen
+      const stream = videoRef.current?.srcObject;
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [onScan]);
@@ -49,7 +45,7 @@ export default function BarcodeScanner({ onScan, onClose }) {
           Close
         </button>
       </div>
-      <div id={containerId} className="flex-1" />
+      <video ref={videoRef} className="flex-1 object-cover" />
       <p className="text-white/60 text-sm text-center p-4">
         Point your camera at a product barcode
       </p>
