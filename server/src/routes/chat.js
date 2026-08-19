@@ -9,7 +9,26 @@ import { calculateMealCalories, calculateCaloriesBurned } from "../services/calo
 import rateLimit from "express-rate-limit";
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"));
+    }
+  },
+});
+// Handles multer-specific errors (bad file type, too large) with a clean
+// JSON response instead of a raw crash/stack trace leaking to the client.
+function handleUploadError(err, req, res, next) {
+  if (err) {
+    return res.status(400).json({ error: err.message || "Upload failed" });
+  }
+  next();
+}
 
 // Limits each user to 30 AI requests per 15 minutes — generous for normal
 // use, but stops runaway costs from a bug or accidental spam.
@@ -162,7 +181,7 @@ router.post("/", requireAuth, chatLimiter, async (req, res) => {
 
 // POST /api/chat/photo — handles any photo; the model decides if it's
 // food (logs it) or a body/progress photo (gives coaching observations)
-router.post("/photo", requireAuth, chatLimiter, upload.single("photo"), async (req, res) => {
+router.post("/photo", requireAuth, chatLimiter, upload.single("photo"), handleUploadError , async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No photo provided" });
   }
