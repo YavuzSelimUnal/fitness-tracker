@@ -21,6 +21,28 @@ A full-stack workout and nutrition tracker with an AI chat assistant — tell it
 - **AI**: Claude API (tool use / function calling) for parsing natural language into structured log entries
 - **External data**: USDA FoodData Central (nutrition), MET value table (exercise calorie burn)
 
+## Security
+
+This project was built with real-world security practices in mind, mapped here to relevant [OWASP Top 10](https://owasp.org/www-project-top-ten/) categories:
+
+| Category | Implementation |
+|---|---|
+| **Broken Authentication** | Passwords hashed with bcrypt (never stored in plain text); JWT-based sessions; rate limiting on login/signup endpoints (10 attempts per 15 min per IP) to deter brute-force attacks |
+| **Injection** | All request bodies validated with Zod schemas before touching the database; Prisma ORM uses parameterized queries throughout, eliminating raw SQL injection risk |
+| **Broken Access Control** | Every edit/delete endpoint verifies the requesting user actually owns the resource before modifying it (e.g. a user cannot edit another user's meal log by guessing its ID) |
+| **Security Misconfiguration** | `helmet` middleware sets standard protective HTTP headers; CORS is restricted to an explicit origin allowlist rather than accepting all origins; no secrets are ever committed to source control (enforced via `.gitignore` and environment variables) |
+| **Vulnerable Components** | Dependencies are periodically checked with `npm audit` and updated when safe, non-breaking fixes are available |
+| **Unrestricted File Upload** | Meal/progress photo uploads are restricted to a strict image MIME-type allowlist and a 10MB size limit; upload errors return clean responses instead of leaking internal error details |
+| **Sensitive Data Exposure** | Error responses avoid leaking stack traces or internal implementation details to the client |
+| **Rate Limiting / Abuse Prevention** | AI chat endpoints are rate-limited per authenticated user, both to prevent abuse and to control API cost exposure |
+
+### Known tradeoffs
+
+No system is without tradeoffs, and being explicit about them is part of good security practice:
+
+- **Auth tokens are stored in `localStorage`, not httpOnly cookies.** This is simpler to implement and is a common choice for small/solo applications, but it does mean that in the event of an XSS vulnerability, a token could theoretically be read by malicious JavaScript. React's default output escaping mitigates this risk significantly (no `dangerouslySetInnerHTML` is used anywhere in this app), but a production system handling more sensitive data would likely use httpOnly cookies with CSRF protection instead.
+- **AI-estimated data (photo-based calorie counts, custom exercise MET values) is approximate by design**, not a security issue, but worth noting: users can manually correct AI-generated estimates that seem inaccurate.
+
 ## Project Structure
 
 ```
