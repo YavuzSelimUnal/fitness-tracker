@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
+import { Html5QrcodeSupportedFormats } from "html5-qrcode";
 
 export default function BarcodeScanner({ onScan, onClose }) {
   const scannerRef = useRef(null);
@@ -10,16 +11,23 @@ export default function BarcodeScanner({ onScan, onClose }) {
     scannerRef.current = scanner;
 
     scanner
-      .start(
-        { facingMode: "environment" }, // rear camera
-        { fps: 10, qrbox: { width: 250, height: 150 } },
-        (decodedText) => {
-          // Stop scanning immediately once we get a hit, to avoid
-          // firing onScan repeatedly for the same barcode
-          scanner.stop().then(() => onScan(decodedText));
-        },
-        () => {} // ignore per-frame "no barcode found" noise
-      )
+    .start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 280, height: 180 },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+        ],
+      },
+      (decodedText) => {
+        scanner.stop().then(() => onScan(decodedText));
+      },
+      () => {}
+    )
       .catch((err) => {
         console.error("Camera start failed:", err);
       });
